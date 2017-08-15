@@ -1,0 +1,3 @@
+package: github.com/Mirantis/istio-rudder-proxy
+import:
+- package: github.com/sirupsen/logrus
