@@ -1,7 +1,6 @@
 package proxy
 
 import (
-	"sync"
 	"time"
 
 	"golang.org/x/net/context"
@@ -18,8 +17,11 @@ func NewProxy(rudderURL, istioContainerPath, istioInitPath string) (*grpc.Server
 	if err != nil {
 		return nil, err
 	}
-	rProxy := &rudderProxy{client: api.NewReleaseModuleServiceClient(conn)}
-	if err := LoadDataOnce(rProxy, istioContainerPath, istioInitPath); err != nil {
+	rProxy := &rudderProxy{
+		client:      api.NewReleaseModuleServiceClient(conn),
+		metaManager: &MetaManager{},
+	}
+	if err := rProxy.metaManager.LoadDataOnce(istioContainerPath, istioInitPath); err != nil {
 		conn.Close()
 		return nil, err
 	}
@@ -29,23 +31,21 @@ func NewProxy(rudderURL, istioContainerPath, istioInitPath string) (*grpc.Server
 }
 
 type rudderProxy struct {
-	client             api.ReleaseModuleServiceClient
-	dataSync           sync.RWMutex
-	istioContainerData string
-	istioInitData      string
+	client      api.ReleaseModuleServiceClient
+	metaManager *MetaManager
 }
 
 func (r *rudderProxy) Version(ctx context.Context, in *api.VersionReleaseRequest) (*api.VersionReleaseResponse, error) {
 	return r.client.Version(ctx, in)
 }
 
-func (r *rudderProxy) InstallRelease(ctx context.Context, in *api.InstallReleaseRequest) (*api.InstallReleaseResponse, error) {
-	return r.client.InstallRelease(ctx, in)
-}
-
 // DeleteRelease requests deletion of a named release.
 func (r *rudderProxy) DeleteRelease(ctx context.Context, in *api.DeleteReleaseRequest) (*api.DeleteReleaseResponse, error) {
 	return r.client.DeleteRelease(ctx, in)
+}
+
+func (r *rudderProxy) InstallRelease(ctx context.Context, in *api.InstallReleaseRequest) (*api.InstallReleaseResponse, error) {
+	return r.client.InstallRelease(ctx, in)
 }
 
 // RollbackRelease rolls back a release to a previous version.
