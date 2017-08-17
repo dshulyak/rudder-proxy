@@ -3,22 +3,34 @@ package proxy
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 	"strings"
 	"sync"
 
 	"github.com/ghodss/yaml"
 	"k8s.io/api/apps/v1beta1"
+	"k8s.io/api/apps/v1beta2"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/conversion/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	yamldecoder "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/helm/pkg/proto/hapi/release"
 )
 
+// NewMetaManager returns pointer to new MetaManager instance
+func NewMetaManager() *MetaManager {
+	return &MetaManager{
+		converter: unstructured.NewConverter(false),
+		reader:    ioutil.ReadFile,
+	}
+}
+
+type fileReader func(filename string) ([]byte, error)
+
 // MetaManager manages state of istio config files and mangles releases
 type MetaManager struct {
 	converter unstructured.Converter
+	reader    fileReader
 
 	dataSync            sync.RWMutex
 	istioContainer      v1.Container
@@ -39,7 +51,7 @@ func (m *MetaManager) MangleRelease(r *release.Release) error {
 }
 
 func (m *MetaManager) newManifest(manifest []byte) (string, error) {
-	writeTo := bytes.NewBuffer(make([]byte, len(manifest)))
+	writeTo := bytes.NewBuffer(make([]byte, 0, len(manifest)))
 	d := yamldecoder.NewYAMLOrJSONDecoder(bytes.NewReader(manifest), 10)
 	for {
 		u, err := decodeSingle(d)
@@ -58,12 +70,7 @@ func (m *MetaManager) newManifest(manifest []byte) (string, error) {
 	return writeTo.String(), nil
 }
 
-// decoder is a convenience interface for Decode.
-type decoder interface {
-	Decode(into interface{}) error
-}
-
-func decodeSingle(d decoder) (map[string]interface{}, error) {
+func decodeSingle(d *yamldecoder.YAMLOrJSONDecoder) (map[string]interface{}, error) {
 	into := map[string]interface{}{}
 	if err := d.Decode(&into); err != nil {
 		return nil, err
@@ -72,36 +79,59 @@ func decodeSingle(d decoder) (map[string]interface{}, error) {
 }
 
 func (m *MetaManager) mangleSingle(u map[string]interface{}) (string, error) {
-	var runtimeObj runtime.Object
-	var ps *v1.PodSpec
+	var runtimeObj interface{}
+	var podSpec *v1.PodSpec
 	var objectMeta *metav1.ObjectMeta
 	// is there better way to do it?
 	switch strings.ToLower(u["kind"].(string)) {
-	case "Pod":
+	case "pod":
 		obj := &v1.Pod{}
 		if err := m.converter.FromUnstructured(u, obj); err != nil {
 			return "", err
 		}
-		ps = &obj.Spec
+		podSpec = &obj.Spec
 		objectMeta = &obj.ObjectMeta
 		runtimeObj = obj
-	case "Deployment":
+	case "deployment":
 		obj := &v1beta1.Deployment{}
 		if err := m.converter.FromUnstructured(u, obj); err != nil {
 			return "", err
 		}
+		podSpec = &obj.Spec.Template.Spec
+		objectMeta = &obj.Spec.Template.ObjectMeta
 		runtimeObj = obj
-	case "StatefulSet":
+	case "statefulset":
 		obj := &v1beta1.StatefulSet{}
 		if err := m.converter.FromUnstructured(u, obj); err != nil {
 			return "", err
 		}
+
+		podSpec = &obj.Spec.Template.Spec
+		objectMeta = &obj.Spec.Template.ObjectMeta
 		runtimeObj = obj
-	}
-	if ps != nil {
-		if err := m.manglePodSpecAndMeta(ps, objectMeta); err != nil {
+	case "daemonset":
+		obj := &v1beta2.DaemonSet{}
+		if err := m.converter.FromUnstructured(u, obj); err != nil {
 			return "", err
 		}
+		podSpec = &obj.Spec.Template.Spec
+		objectMeta = &obj.Spec.Template.ObjectMeta
+		runtimeObj = obj
+	case "replicaset":
+		obj := &v1beta2.ReplicaSet{}
+		if err := m.converter.FromUnstructured(u, obj); err != nil {
+			return "", err
+		}
+		podSpec = &obj.Spec.Template.Spec
+		objectMeta = &obj.Spec.Template.ObjectMeta
+		runtimeObj = obj
+	}
+	if podSpec != nil {
+		if err := m.manglePodSpecAndMeta(podSpec, objectMeta); err != nil {
+			return "", err
+		}
+	} else {
+		runtimeObj = u
 	}
 	serialized, err := yaml.Marshal(runtimeObj)
 	if err != nil {

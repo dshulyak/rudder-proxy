@@ -3,9 +3,9 @@ package proxy
 import (
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-
 	api "k8s.io/helm/pkg/proto/hapi/rudder"
 )
 
@@ -19,10 +19,12 @@ func NewProxy(rudderURL, istioContainerPath, istioInitPath string) (*grpc.Server
 	}
 	rProxy := &rudderProxy{
 		client:      api.NewReleaseModuleServiceClient(conn),
-		metaManager: &MetaManager{},
+		metaManager: NewMetaManager(),
 	}
 	if err := rProxy.metaManager.LoadDataOnce(istioContainerPath, istioInitPath); err != nil {
-		conn.Close()
+		if err := conn.Close(); err != nil {
+			log.Errorf("error closing grpc connection: %v\n", err)
+		}
 		return nil, err
 	}
 	server := grpc.NewServer()
@@ -31,6 +33,8 @@ func NewProxy(rudderURL, istioContainerPath, istioInitPath string) (*grpc.Server
 }
 
 type rudderProxy struct {
+	// it is safe to use single connection from multiple threads and in case of failures grpc
+	// will reestablish connection itself
 	client      api.ReleaseModuleServiceClient
 	metaManager *MetaManager
 }
@@ -45,6 +49,7 @@ func (r *rudderProxy) DeleteRelease(ctx context.Context, in *api.DeleteReleaseRe
 }
 
 func (r *rudderProxy) InstallRelease(ctx context.Context, in *api.InstallReleaseRequest) (*api.InstallReleaseResponse, error) {
+	r.metaManager.MangleRelease(in.GetRelease())
 	return r.client.InstallRelease(ctx, in)
 }
 

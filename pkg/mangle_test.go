@@ -2,16 +2,17 @@ package proxy
 
 import (
 	"bytes"
-	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/conversion/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/helm/pkg/proto/hapi/release"
 )
 
-var podYaml = `
+var testManifest = `
 apiVersion: v1
 kind: Pod
 metadata:
@@ -76,39 +77,60 @@ spec:
             - /bin/cat
             - /tmp/health
         name: test-container2
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: example-secret
+type: Opaque
+data:
+  password: MWYyZDFlMmU2N2Rm
+  username: YWRtaW4=
+---
 `
 
-func TestMangleList(t *testing.T) {
-	m := map[string]interface{}{}
-	decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewReader([]byte(podYaml)), 10)
-	decoder.Decode(&m)
-	converter := unstructured.NewConverter(false)
-	p := v1.Pod{}
-	if err := converter.FromUnstructured(m, &p); err != nil {
-		t.Error(err)
+func TestMangleRelease(t *testing.T) {
+	testRelease := &release.Release{Manifest: testManifest}
+	manager := NewMetaManager()
+	manager.istioAnnotations = map[string]string{
+		"test.annotation":        "111",
+		"test.second.annotation": "222",
 	}
-	if p.Name != "test-pod" {
-		t.Errorf("unexpected parsing results: %v", p)
+	manager.istioContainer = v1.Container{Name: "test.container"}
+	manager.istioInitContainers = []v1.Container{{Name: "test.init.1"}, {Name: "test.init.2"}}
+
+	require.NoError(t, manager.MangleRelease(testRelease), "mangle release shouldn't return error")
+	// we can rely on order to be preserved
+	d := yaml.NewYAMLOrJSONDecoder(bytes.NewReader([]byte(testRelease.Manifest)), 10)
+	pod := &v1.Pod{}
+	require.NoError(t, d.Decode(pod))
+	verifyPodSpecAndAnnotations(t, manager, pod.Spec, pod.ObjectMeta.Annotations)
+	deployment := &v1beta1.Deployment{}
+	require.NoError(t, d.Decode(deployment))
+	verifyPodSpecAndAnnotations(t, manager, deployment.Spec.Template.Spec,
+		deployment.Spec.Template.ObjectMeta.Annotations)
+	statefulSet := &v1beta1.StatefulSet{}
+	require.NoError(t, d.Decode(statefulSet))
+	verifyPodSpecAndAnnotations(t, manager, statefulSet.Spec.Template.Spec,
+		statefulSet.Spec.Template.ObjectMeta.Annotations)
+	secret := v1.Secret{}
+	require.NoError(t, d.Decode(&secret))
+	assert.Equal(t, "example-secret", secret.Name)
+}
+
+func verifyPodSpecAndAnnotations(t *testing.T, m *MetaManager, podSpec v1.PodSpec, annotations map[string]string) {
+	assert.Equal(t, m.istioContainer.Name, podSpec.Containers[len(podSpec.Containers)-1].Name)
+	for key, val := range m.istioAnnotations {
+		assert.Equal(t, val, annotations[key])
 	}
-	for key := range m {
-		m[key] = nil
+	initContainers, isSet := annotations[v1.PodInitContainersBetaAnnotationKey]
+	require.True(t, isSet, "init containers should be present")
+	d := yaml.NewYAMLOrJSONDecoder(bytes.NewReader([]byte(initContainers)), 10)
+	containers := make([]v1.Container, 0, 2)
+	assert.NoError(t, d.Decode(&containers))
+	assert.Equal(t, len(m.istioInitContainers), len(containers))
+	for i, c := range m.istioInitContainers {
+		assert.Equal(t, c.Name, containers[i].Name)
 	}
-	decoder.Decode(&m)
-	dep := v1beta1.Deployment{}
-	if err := converter.FromUnstructured(m, &dep); err != nil {
-		t.Error(err)
-	}
-	if dep.Name != "nginx-deployment" {
-		t.Errorf("unexpected parser results: %v", dep)
-	}
-	decoder.Decode(&m)
-	statefulSet := v1beta1.StatefulSet{}
-	if err := converter.FromUnstructured(m, &statefulSet); err != nil {
-		t.Error(err)
-	}
-	if statefulSet.Name != "test-petset" {
-		t.Errorf("unexpected parser results: %v", dep)
-	}
-	p1 := v1.Pod{}
-	fmt.Println(decoder.Decode(&p1))
+
 }

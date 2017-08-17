@@ -1,5 +1,5 @@
-hash: 6575e16826610c470a9795e94522f1f32071e411b4f1727aa6c3bbd082f1bb8c
-updated: 2017-08-16T11:54:09.034539416+03:00
+hash: d4e7800ab45d32e28211101a815b544edea9e9de481f6732408ca8ff051a2d43
+updated: 2017-08-17T10:47:29.604089028+03:00
 imports:
 - name: github.com/davecgh/go-spew
   version: 782f4967f2dc4564575ca782fe2d04090b5faca8
@@ -53,7 +53,7 @@ imports:
   subpackages:
   - codec
 - name: golang.org/x/crypto
-  version: 1f22c0103821b9390939b6776727195525381532
+  version: b176d7def5d71bdd214203491f89843ed217f420
   subpackages:
   - ssh/terminal
 - name: golang.org/x/net
@@ -67,9 +67,10 @@ imports:
   - lex/httplex
   - trace
 - name: golang.org/x/sys
-  version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
+  version: 9f7170bcd8e9f4d3691c06401119c46a769a1e03
   subpackages:
   - unix
+  - windows
 - name: golang.org/x/text
   version: 2910a502d2bf9e43193af9d68ca516529614eed3
   subpackages:
@@ -100,10 +101,12 @@ imports:
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/yaml.v2
-  version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
+  version: eb3733d160e74a9c7e442f435eb3bea458e1d19f
 - name: k8s.io/api
   version: c0bcfdc3597be1a899c9f0b4e3d1b2e023b5148f
   subpackages:
+  - apps/v1beta1
+  - apps/v1beta2
   - core/v1
 - name: k8s.io/apimachinery
   version: dc1f89aff9a7509782bde3b68824c8043a3e58cc
@@ -135,9 +138,21 @@ imports:
   - pkg/watch
   - third_party/forked/golang/reflect
 - name: k8s.io/helm
-  version: 7cf31e8d9a026287041bae077b09165be247ae66
+  version: 4c1a47480e70cabb5d9e227bc55bd75ea9406de0
   subpackages:
   - pkg/proto/hapi/chart
   - pkg/proto/hapi/release
   - pkg/proto/hapi/rudder
-testImports: []
+testImports:
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib
+- name: github.com/stretchr/objx
+  version: cbeaeb16a013161a98496fad62933b1d21786672
+- name: github.com/stretchr/testify
+  version: f6abca593680b2315d2075e0f5e2a9751e3f431a
+  subpackages:
+  - assert
+  - mock
+  - require

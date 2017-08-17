@@ -1,5 +1,6 @@
 package: github.com/Mirantis/istio-rudder-proxy
 import:
+- package: github.com/ghodss/yaml
 - package: github.com/sirupsen/logrus
 - package: golang.org/x/net
   subpackages:
@@ -7,12 +8,21 @@ import:
 - package: google.golang.org/grpc
 - package: k8s.io/api
   subpackages:
+  - apps/v1beta1
+  - apps/v1beta2
   - core/v1
 - package: k8s.io/apimachinery
   subpackages:
+  - pkg/apis/meta/v1
   - pkg/conversion/unstructured
   - pkg/util/yaml
 - package: k8s.io/helm
   subpackages:
   - pkg/proto/hapi/release
   - pkg/proto/hapi/rudder
+testImport:
+- package: github.com/stretchr/testify
+  subpackages:
+  - assert
+  - mock
+  - require

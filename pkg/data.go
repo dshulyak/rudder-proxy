@@ -3,7 +3,6 @@ package proxy
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -13,11 +12,11 @@ import (
 func (m *MetaManager) LoadDataOnce(istioContainerPath, istioInitPath string) error {
 	m.dataSync.Lock()
 	defer m.dataSync.Unlock()
-	containerData, err := ioutil.ReadFile(istioContainerPath)
+	containerData, err := m.reader(istioContainerPath)
 	if err != nil {
 		return err
 	}
-	initData, err := ioutil.ReadFile(istioInitPath)
+	initData, err := m.reader(istioInitPath)
 	if err != nil {
 		return err
 	}
