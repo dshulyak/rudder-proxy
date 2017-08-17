@@ -1,16 +1,18 @@
 package proxy
 
 import (
+	"bytes"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/istio/pilot/platform/kube/inject"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	api "k8s.io/helm/pkg/proto/hapi/rudder"
 )
 
-func NewProxy(rudderURL, istioContainerPath, istioInitPath string) (*grpc.Server, error) {
-	conn, err := grpc.Dial(rudderURL,
+func NewProxy(rudderURL string, params *inject.Params) (*grpc.Server, error) {
+	conn, err := grpc.Dial(
+		rudderURL,
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
 		grpc.WithTimeout(3*time.Second))
@@ -18,14 +20,8 @@ func NewProxy(rudderURL, istioContainerPath, istioInitPath string) (*grpc.Server
 		return nil, err
 	}
 	rProxy := &rudderProxy{
-		client:      api.NewReleaseModuleServiceClient(conn),
-		metaManager: NewMetaManager(),
-	}
-	if err := rProxy.metaManager.LoadDataOnce(istioContainerPath, istioInitPath); err != nil {
-		if err := conn.Close(); err != nil {
-			log.Errorf("error closing grpc connection: %v\n", err)
-		}
-		return nil, err
+		client: api.NewReleaseModuleServiceClient(conn),
+		params: params,
 	}
 	server := grpc.NewServer()
 	api.RegisterReleaseModuleServiceServer(server, rProxy)
@@ -35,8 +31,8 @@ func NewProxy(rudderURL, istioContainerPath, istioInitPath string) (*grpc.Server
 type rudderProxy struct {
 	// it is safe to use single connection from multiple threads and in case of failures grpc
 	// will reestablish connection itself
-	client      api.ReleaseModuleServiceClient
-	metaManager *MetaManager
+	client api.ReleaseModuleServiceClient
+	params *inject.Params
 }
 
 func (r *rudderProxy) Version(ctx context.Context, in *api.VersionReleaseRequest) (*api.VersionReleaseResponse, error) {
@@ -49,7 +45,9 @@ func (r *rudderProxy) DeleteRelease(ctx context.Context, in *api.DeleteReleaseRe
 }
 
 func (r *rudderProxy) InstallRelease(ctx context.Context, in *api.InstallReleaseRequest) (*api.InstallReleaseResponse, error) {
-	r.metaManager.MangleRelease(in.GetRelease())
+	newManifest := bytes.NewBuffer(make([]byte, 0, len([]byte(in.Release.Manifest))))
+	inject.IntoResourceFile(r.params, bytes.NewReader([]byte(in.Release.Manifest)), newManifest)
+	in.Release.Manifest = newManifest.String()
 	return r.client.InstallRelease(ctx, in)
 }
 

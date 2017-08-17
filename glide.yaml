@@ -1,28 +1,17 @@
 package: github.com/Mirantis/istio-rudder-proxy
 import:
-- package: github.com/ghodss/yaml
+- package: github.com/istio/pilot
+  subpackages:
+  - platform/kube/inject
 - package: github.com/sirupsen/logrus
 - package: golang.org/x/net
   subpackages:
   - context
 - package: google.golang.org/grpc
-- package: k8s.io/api
+- package: k8s.io/client-go
   subpackages:
-  - apps/v1beta1
-  - apps/v1beta2
-  - core/v1
-- package: k8s.io/apimachinery
-  subpackages:
-  - pkg/apis/meta/v1
-  - pkg/conversion/unstructured
-  - pkg/util/yaml
+  - kubernetes
+  - tools/clientcmd
 - package: k8s.io/helm
   subpackages:
-  - pkg/proto/hapi/release
   - pkg/proto/hapi/rudder
-testImport:
-- package: github.com/stretchr/testify
-  subpackages:
-  - assert
-  - mock
-  - require
