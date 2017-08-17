@@ -2,9 +2,8 @@ package main
 
 import (
 	"flag"
-	"os"
-
 	"net"
+	"os"
 
 	proxy "github.com/Mirantis/istio-rudder-proxy/pkg"
 	log "github.com/sirupsen/logrus"
@@ -37,7 +36,7 @@ func main() {
 	}
 	log.SetLevel(level)
 	log.Infof("Istio rudder proxy listening on %s with rudder URL %s\n", opts.Listen, opts.RudderURL)
-	proxyServer, err := proxy.NewProxy(opts.RudderURL)
+	proxyServer, err := proxy.NewProxy(opts.RudderURL, opts.IstioContainerPath, opts.IstioInitPath)
 	if err != nil {
 		log.Panic(err)
 	}
