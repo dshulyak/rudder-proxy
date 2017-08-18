@@ -32,9 +32,9 @@ type options struct {
 }
 
 func (opts *options) registerFlags() {
-	pflag.StringVarP(&opts.rudderURL, "connect", "c", "http://localhost:8788", "")
+	pflag.StringVarP(&opts.rudderURL, "rudder-socket", "s", "0.0.0.0:10002", "Rudderl socket")
 	pflag.StringVarP(&opts.verbosity, "verbosity", "v", "debug", "Logger verbosity")
-	pflag.StringVarP(&opts.listen, "listen", "l", "0.0.0.0:8989", "Listening socket.")
+	pflag.StringVarP(&opts.listen, "listen", "l", "0.0.0.0:10001", "Listen on this socket")
 	pflag.StringVar(&opts.hub, "hub", "docker.io/istio", "Docker hub")
 	pflag.StringVar(&opts.tag, "tag", version.Info.Version, "Docker tag")
 	pflag.Int64Var(&opts.sidecarProxyUID, "sidecarProxyUID", inject.DefaultSidecarProxyUID, "Envoy sidecar UID")

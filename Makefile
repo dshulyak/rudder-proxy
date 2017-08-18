@@ -6,7 +6,7 @@ deps:
 	protoc --go_out=plugins=grpc:. ./proxy/v1/config/*.proto && \
 	popd
 
-build: deps
+build: vendor/
 	go build -o istio-proxy ./cmd/ 
 
 docker: build
