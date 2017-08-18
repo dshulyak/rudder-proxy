@@ -1,17 +1,33 @@
 package: github.com/Mirantis/istio-rudder-proxy
 import:
-- package: github.com/istio/pilot
-  subpackages:
-  - platform/kube/inject
 - package: github.com/sirupsen/logrus
+  version: v1.0.3
 - package: golang.org/x/net
   subpackages:
   - context
 - package: google.golang.org/grpc
+- package: istio.io/pilot
+  version: 0.2.0
+  subpackages:
+  - platform/kube/inject
+- package: istio.io/api
+  version: 06b20c18cd48db61462f3b75df0a6808b353943e
+  subpackages:
+  - proxy/v1/config
+- package: k8s.io/api
+  version: e532fdb5587debfd7aade56dabe9eb5df9544baf
+  subpackages:
+  - apps/v1beta1
+  - batch/v1
+  - core/v1
+  - extensions/v1beta1
 - package: k8s.io/client-go
+  version: 1850dd66e4213a26bd70d0b85fee4176d324b845
   subpackages:
   - kubernetes
   - tools/clientcmd
+- package: k8s.io/apimachinery
+  version: a13245d02534abe88286859b547d041816f9a3f4
 - package: k8s.io/helm
   subpackages:
   - pkg/proto/hapi/rudder

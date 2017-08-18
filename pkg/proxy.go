@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"time"
 
-	"github.com/istio/pilot/platform/kube/inject"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"istio.io/pilot/platform/kube/inject"
 	api "k8s.io/helm/pkg/proto/hapi/rudder"
 )
 

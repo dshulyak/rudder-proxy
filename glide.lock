@@ -1,8 +1,8 @@
-hash: c6b68b3e0ce5156a9e855ce8bdf2a5d4788b92448fe85843e6e654b0b2ff9fa2
-updated: 2017-08-17T15:13:56.430227571+03:00
+hash: 0958dfd6d426ab970762b68bef9bdcdf0ac749ec2fd8f90a35c5200ffdcd7bd0
+updated: 2017-08-18T11:11:23.422751811+03:00
 imports:
 - name: github.com/davecgh/go-spew
-  version: 782f4967f2dc4564575ca782fe2d04090b5faca8
+  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
   subpackages:
   - spew
 - name: github.com/emicklei/go-restful
@@ -53,10 +53,6 @@ imports:
   version: bf9dde6d0d2c004a008c27aaee91170c786f6db8
 - name: github.com/imdario/mergo
   version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
-- name: github.com/istio/pilot
-  version: c4ac7cd1d8c2d1e64d82209d80c2b41637e815f5
-  subpackages:
-  - platform/kube/inject
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - name: github.com/mailru/easyjson
@@ -70,7 +66,7 @@ imports:
 - name: github.com/PuerkitoBio/urlesc
   version: 5bd2802263f21d8788851d5305584c82a5c75d7e
 - name: github.com/sirupsen/logrus
-  version: 68806b4b77355d6c8577a2c8bbc6d547a5272491
+  version: f006c2ac4710855cf0f916dd6b77acf6b048dc6e
 - name: github.com/spf13/pflag
   version: 9ff6c6923cfffbcd502984b8e0c80539a94968b7
 - name: github.com/ugorji/go
@@ -95,7 +91,6 @@ imports:
   version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
   subpackages:
   - unix
-  - windows
 - name: golang.org/x/text
   version: 2910a502d2bf9e43193af9d68ca516529614eed3
   subpackages:
@@ -113,12 +108,8 @@ imports:
   version: 8be79e1e0910c292df4e79c241bb7e8f7e725959
   subpackages:
   - rate
-- name: google.golang.org/genproto
-  version: 6b7d9516179cd47f4714cfeb0103ad1dede756c4
-  subpackages:
-  - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: b3ddf786825de56a4178401b7e174ee332173b66
+  version: 8050b9cbc271307e5a716a9d782803d09b0d6f2d
   subpackages:
   - codes
   - credentials
@@ -129,7 +120,6 @@ imports:
   - naming
   - peer
   - stats
-  - status
   - tap
   - transport
 - name: gopkg.in/inf.v0
@@ -137,21 +127,20 @@ imports:
 - name: gopkg.in/yaml.v2
   version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
 - name: istio.io/api
-  version: a0ba5903ae2771eac13f80c3a936ed70fd3494d5
+  version: 06b20c18cd48db61462f3b75df0a6808b353943e
   subpackages:
   - proxy/v1/config
 - name: istio.io/pilot
-  version: c4ac7cd1d8c2d1e64d82209d80c2b41637e815f5
+  version: a0268275a8704fe53fe4eec59b2adcdb7124492e
   subpackages:
   - model
-  - model/test
+  - platform/kube/inject
   - proxy
 - name: k8s.io/api
-  version: e012d1a19ed30848135c78dca93b6d6a0f82d9e0
+  version: e532fdb5587debfd7aade56dabe9eb5df9544baf
   subpackages:
   - admissionregistration/v1alpha1
   - apps/v1beta1
-  - apps/v1beta2
   - authentication/v1
   - authentication/v1beta1
   - authorization/v1
@@ -167,12 +156,11 @@ imports:
   - policy/v1beta1
   - rbac/v1alpha1
   - rbac/v1beta1
-  - scheduling/v1alpha1
   - settings/v1alpha1
   - storage/v1
   - storage/v1beta1
 - name: k8s.io/apimachinery
-  version: dc1f89aff9a7509782bde3b68824c8043a3e58cc
+  version: a13245d02534abe88286859b547d041816f9a3f4
   subpackages:
   - pkg/api/equality
   - pkg/api/errors
@@ -214,14 +202,13 @@ imports:
   - pkg/watch
   - third_party/forked/golang/reflect
 - name: k8s.io/client-go
-  version: 2103a0e46b61d837aca715a6da810783527a4974
+  version: 1850dd66e4213a26bd70d0b85fee4176d324b845
   subpackages:
   - discovery
   - kubernetes
   - kubernetes/scheme
   - kubernetes/typed/admissionregistration/v1alpha1
   - kubernetes/typed/apps/v1beta1
-  - kubernetes/typed/apps/v1beta2
   - kubernetes/typed/authentication/v1
   - kubernetes/typed/authentication/v1beta1
   - kubernetes/typed/authorization/v1
@@ -237,10 +224,10 @@ imports:
   - kubernetes/typed/policy/v1beta1
   - kubernetes/typed/rbac/v1alpha1
   - kubernetes/typed/rbac/v1beta1
-  - kubernetes/typed/scheduling/v1alpha1
   - kubernetes/typed/settings/v1alpha1
   - kubernetes/typed/storage/v1
   - kubernetes/typed/storage/v1beta1
+  - pkg/api/v1/ref
   - pkg/version
   - rest
   - rest/watch
@@ -250,14 +237,13 @@ imports:
   - tools/clientcmd/api/latest
   - tools/clientcmd/api/v1
   - tools/metrics
-  - tools/reference
   - transport
   - util/cert
   - util/flowcontrol
   - util/homedir
   - util/integer
 - name: k8s.io/helm
-  version: 4c1a47480e70cabb5d9e227bc55bd75ea9406de0
+  version: 5bc7c619f85d74702e810a8325e0a24f729aa11a
   subpackages:
   - pkg/proto/hapi/chart
   - pkg/proto/hapi/release

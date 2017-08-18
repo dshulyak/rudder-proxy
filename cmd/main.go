@@ -1,13 +1,16 @@
 package main
 
 import (
-	"flag"
+	"fmt"
 	"net"
 	"os"
 
 	proxy "github.com/Mirantis/istio-rudder-proxy/pkg"
-	"github.com/istio/pilot/platform/kube/inject"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
+	"istio.io/pilot/platform/kube/inject"
+	"istio.io/pilot/tools/version"
+	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -17,6 +20,7 @@ type options struct {
 	rudderURL string
 	logLevel  string
 
+	kubeconfig      string
 	hub             string
 	tag             string
 	sidecarProxyUID int64
@@ -24,10 +28,40 @@ type options struct {
 	versionStr      string // override build version
 	enableCoreDump  bool
 	meshConfig      string
-	imagePullPolicy string
 	includeIPRanges string
+	istioSystem     string
+}
 
-	kubeconfig string
+func (opts *options) registerFlags() {
+	defaultKubeconfig := os.Getenv("HOME") + "/.kube/config"
+	if v := os.Getenv("KUBECONFIG"); v != "" {
+		defaultKubeconfig = v
+	}
+	pflag.StringVar(&opts.rudderURL, "rudder", "http://localhost:8788",
+		"URL that will be used for qcommunication with rudder.")
+	pflag.StringVar(&opts.logLevel, "log-level", "debug", "Logger level controls amount of details in logs.")
+	pflag.StringVar(&opts.listen, "--listen", "0.0.0.0:8989", "Listening socket.")
+	pflag.StringVar(&opts.hub, "hub", "docker.io/istio", "Docker hub")
+	pflag.StringVar(&opts.tag, "tag", version.Info.Version, "Docker tag")
+	pflag.IntVar(&opts.verbosity, "verbosity", inject.DefaultVerbosity, "Runtime verbosity")
+	pflag.Int64Var(&opts.sidecarProxyUID, "sidecarProxyUID",
+		inject.DefaultSidecarProxyUID, "Envoy sidecar UID")
+	pflag.StringVar(&opts.versionStr, "setVersionString",
+		"", "Override version info injected into resource")
+	pflag.StringVar(&opts.meshConfig, "meshConfig", "istio",
+		fmt.Sprintf("ConfigMap name for Istio mesh configuration, key should be %q", inject.ConfigMapKey))
+	pflag.StringVarP(&opts.kubeconfig, "kubeconfig", "c", defaultKubeconfig,
+		"Kubernetes configuration file")
+	pflag.StringVarP(&opts.istioSystem, "namespace", "n", v1.NamespaceDefault,
+		"Kubernetes Istio system namespace")
+}
+
+func (opts *options) parseFlags() {
+	pflag.Parse()
+	if opts.versionStr == "" {
+		opts.versionStr = version.Line()
+	}
+
 }
 
 func init() {
@@ -35,11 +69,9 @@ func init() {
 }
 
 func main() {
-	opts := options{}
-	flag.StringVar(&opts.rudderURL, "rudder", "http://localhost:8788",
-		"URL that will be used for qcommunication with rudder.")
-	flag.StringVar(&opts.logLevel, "log-level", "debug", "Logger level controls amount of details in logs.")
-	flag.StringVar(&opts.listen, "--listen", "0.0.0.0:8989", "Listening socket.")
+	opts := new(options)
+	opts.registerFlags()
+	opts.parseFlags()
 	level, err := log.ParseLevel(opts.logLevel)
 	if err != nil {
 		log.Panic(err)
@@ -69,7 +101,6 @@ func main() {
 		EnableCoreDump:    opts.enableCoreDump,
 		Mesh:              mesh,
 		MeshConfigMapName: opts.meshConfig,
-		ImagePullPolicy:   opts.imagePullPolicy,
 		IncludeIPRanges:   opts.includeIPRanges,
 	}
 	proxyServer, err := proxy.NewProxy(opts.rudderURL, params)
