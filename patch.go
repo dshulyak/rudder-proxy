@@ -31,11 +31,11 @@ func main() {
 
 func makeNew(new v1beta1.Deployment) *v1beta1.Deployment {
 	newContainers := []corev1.Container{
-		{Name: "rudder", Image: "yashulyak/rudder", Args: []string{"-l", "0.0.0.0:10002"}},
+		{Name: "rudder", Image: "yashulyak/rudder", Command: []string{"/rudder", "-l", "0.0.0.0:10002"}},
 		{Name: "istio-rudder-proxy", Image: "yashulyak/istio-rudder-proxy",
-			Args: []string{"-l", "0.0.0.0:10001", "-s", "0.0.0.0:10002"}},
+			Args: []string{"-l", "0.0.0.0:10001", "-s", "0.0.0.0:10002", "--tag", "0.2.0"}},
 	}
-	new.Spec.Template.Spec.Containers[0].Args = []string{"--experimental-release"}
+	new.Spec.Template.Spec.Containers[0].Command = []string{"/tiller", "--experimental-release"}
 	new.Spec.Template.Spec.Containers = append(new.Spec.Template.Spec.Containers, newContainers...)
 	return &new
 }

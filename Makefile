@@ -7,7 +7,7 @@ deps:
 	popd
 
 build: vendor/
-	go build -o istio-proxy ./cmd/ 
+	CGO_ENABLED=0 go build -o istio-proxy ./cmd/
 
 docker: build
 	docker build -t yashulyak/istio-rudder-proxy .

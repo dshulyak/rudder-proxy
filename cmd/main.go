@@ -36,7 +36,7 @@ func (opts *options) registerFlags() {
 	pflag.StringVarP(&opts.verbosity, "verbosity", "v", "debug", "Logger verbosity")
 	pflag.StringVarP(&opts.listen, "listen", "l", "0.0.0.0:10001", "Listen on this socket")
 	pflag.StringVar(&opts.hub, "hub", "docker.io/istio", "Docker hub")
-	pflag.StringVar(&opts.tag, "tag", version.Info.Version, "Docker tag")
+	pflag.StringVar(&opts.tag, "tag", "0.2.0", "Docker tag")
 	pflag.Int64Var(&opts.sidecarProxyUID, "sidecarProxyUID", inject.DefaultSidecarProxyUID, "Envoy sidecar UID")
 	pflag.StringVar(&opts.versionStr, "setVersionString", "", "Override version info injected into resource")
 	pflag.StringVar(&opts.meshConfig, "meshConfig", "istio",
