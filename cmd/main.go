@@ -19,16 +19,17 @@ type options struct {
 	listen    string
 	rudderURL string
 
-	kubeconfig      string
-	hub             string
-	tag             string
-	sidecarProxyUID int64
-	verbosity       string
-	versionStr      string // override build version
-	enableCoreDump  bool
-	meshConfig      string
-	includeIPRanges string
-	istioSystem     string
+	kubeconfig          string
+	hub                 string
+	tag                 string
+	sidecarProxyUID     int64
+	verbosity           string
+	versionStr          string // override build version
+	enableCoreDump      bool
+	meshConfig          string
+	includeIPRanges     string
+	istioSystem         string
+	istioSkipAnnotation string
 }
 
 func (opts *options) registerFlags() {
@@ -43,6 +44,8 @@ func (opts *options) registerFlags() {
 		fmt.Sprintf("ConfigMap name for Istio mesh configuration, key should be %q", inject.ConfigMapKey))
 	pflag.StringVarP(&opts.kubeconfig, "kubeconfig", "c", "", "Kubernetes configuration file")
 	pflag.StringVarP(&opts.istioSystem, "namespace", "n", v1.NamespaceDefault, "Kubernetes Istio system namespace")
+	pflag.StringVarP(&opts.istioSkipAnnotation, "annotation", "a", "istio.skip",
+		"Annotated object won't have injected istio proxy.")
 }
 
 func (opts *options) parseFlags() {
@@ -96,7 +99,7 @@ func main() {
 		MeshConfigMapName: opts.meshConfig,
 		IncludeIPRanges:   opts.includeIPRanges,
 	}
-	proxyServer, err := proxy.NewProxy(opts.rudderURL, params)
+	proxyServer, err := proxy.NewProxy(opts.rudderURL, opts.istioSkipAnnotation, params)
 	if err != nil {
 		log.Error(err)
 		log.Exit(1)
