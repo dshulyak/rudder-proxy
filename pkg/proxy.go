@@ -55,8 +55,12 @@ func (r *rudderProxy) InstallRelease(ctx context.Context, in *api.InstallRelease
 	newManifest := bytes.NewBuffer(make([]byte, 0, len([]byte(in.Release.Manifest))))
 	originalManifest := bytes.NewReader([]byte(in.Release.Manifest))
 	proxyManifest := bytes.NewBuffer(make([]byte, 0, len([]byte(in.Release.Manifest))))
-	inject.IntoResourceFile(r.params, bytes.NewReader(proxyManifest.Bytes()), newManifest)
-	skipWithAnnotation(r.annotation, originalManifest, newManifest, proxyManifest)
+	if err := inject.IntoResourceFile(r.params, bytes.NewReader(proxyManifest.Bytes()), newManifest); err != nil {
+		return nil, err
+	}
+	if err := skipWithAnnotation(r.annotation, originalManifest, newManifest, proxyManifest); err != nil {
+		return nil, err
+	}
 	in.Release.Manifest = newManifest.String()
 	return r.client.InstallRelease(ctx, in)
 }
@@ -71,7 +75,11 @@ func skipWithAnnotation(annotation string, original io.Reader, new, proxy io.Wri
 		if err != nil {
 			return err
 		}
-		if addMeta(annotation, raw) {
+		added, err := addMeta(annotation, raw)
+		if err != nil {
+			return err
+		}
+		if added {
 			if _, err := proxy.Write(raw); err != nil {
 				return err
 			}
@@ -86,19 +94,21 @@ func skipWithAnnotation(annotation string, original io.Reader, new, proxy io.Wri
 	}
 }
 
-func addMeta(annotation string, object []byte) bool {
+func addMeta(annotation string, object []byte) (bool, error) {
 	data := map[string]interface{}{}
-	yaml.Unmarshal(object, &data)
+	if err := yaml.Unmarshal(object, &data); err != nil {
+		return false, err
+	}
 	path := []string{"metadata", "annotations"}
 	for _, p := range path {
 		if level, exist := data[p]; !exist {
-			return true
+			return true, nil
 		} else {
 			data = level.(map[string]interface{})
 		}
 	}
 	_, exist := data[annotation]
-	return !exist
+	return !exist, nil
 }
 
 // RollbackRelease rolls back a release to a previous version.

@@ -1,7 +1,9 @@
 package proxy
 
-import "testing"
-import "strconv"
+import (
+	"strconv"
+	"testing"
+)
 
 func TestAddMeta(t *testing.T) {
 	for i, tc := range []struct {
@@ -30,7 +32,7 @@ metadata:
 		},
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			if rst := addMeta("istio.skip", []byte(tc.object)); rst != tc.expected {
+			if rst, _ := addMeta("istio.skip", []byte(tc.object)); rst != tc.expected {
 				t.Errorf("result '%t' is different from expected '%t' for object %s", rst, tc.expected, tc.object)
 			}
 		})

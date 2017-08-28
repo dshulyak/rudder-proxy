@@ -1,5 +1,8 @@
 SHELL := /bin/bash
 
+test:
+	go test ./pkg/...
+
 deps:
 	glide install --strip-vendor
 	pushd vendor/istio.io/api/ && \
