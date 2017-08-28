@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"istio.io/pilot/platform/kube/inject"
@@ -22,6 +23,7 @@ func NewProxy(rudderURL, annotation string, params *inject.Params) (*grpc.Server
 		grpc.WithBlock(),
 		grpc.WithTimeout(3*time.Second))
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 	rProxy := &rudderProxy{
@@ -52,16 +54,20 @@ func (r *rudderProxy) DeleteRelease(ctx context.Context, in *api.DeleteReleaseRe
 }
 
 func (r *rudderProxy) InstallRelease(ctx context.Context, in *api.InstallReleaseRequest) (*api.InstallReleaseResponse, error) {
+	log.Debug("Received manifest", in.Release.Manifest)
 	newManifest := bytes.NewBuffer(make([]byte, 0, len([]byte(in.Release.Manifest))))
 	originalManifest := bytes.NewReader([]byte(in.Release.Manifest))
 	proxyManifest := bytes.NewBuffer(make([]byte, 0, len([]byte(in.Release.Manifest))))
-	if err := inject.IntoResourceFile(r.params, bytes.NewReader(proxyManifest.Bytes()), newManifest); err != nil {
+	if err := skipWithAnnotation(r.annotation, originalManifest, newManifest, proxyManifest); err != nil {
+		log.Errorf("error filtering objects with annotation %s: %v", r.annotation, err)
 		return nil, err
 	}
-	if err := skipWithAnnotation(r.annotation, originalManifest, newManifest, proxyManifest); err != nil {
+	if err := inject.IntoResourceFile(r.params, bytes.NewReader(proxyManifest.Bytes()), newManifest); err != nil {
+		log.Errorf("error injecting istio proxy %v", err)
 		return nil, err
 	}
 	in.Release.Manifest = newManifest.String()
+	log.Debug("Result manifest", in.Release.Manifest)
 	return r.client.InstallRelease(ctx, in)
 }
 
@@ -75,12 +81,16 @@ func skipWithAnnotation(annotation string, original io.Reader, new, proxy io.Wri
 		if err != nil {
 			return err
 		}
-		added, err := addMeta(annotation, raw)
+		added, err := annotationDoesNotExist(annotation, raw)
 		if err != nil {
 			return err
 		}
+
 		if added {
 			if _, err := proxy.Write(raw); err != nil {
+				return err
+			}
+			if _, err = fmt.Fprint(proxy, "---\n"); err != nil {
 				return err
 			}
 		} else {
@@ -94,7 +104,7 @@ func skipWithAnnotation(annotation string, original io.Reader, new, proxy io.Wri
 	}
 }
 
-func addMeta(annotation string, object []byte) (bool, error) {
+func annotationDoesNotExist(annotation string, object []byte) (bool, error) {
 	data := map[string]interface{}{}
 	if err := yaml.Unmarshal(object, &data); err != nil {
 		return false, err
